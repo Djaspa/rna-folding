@@ -1,4 +1,3 @@
-
 import pickle
 import urllib.request
 from dataclasses import asdict, dataclass
@@ -7,11 +6,6 @@ from typing import Literal, Optional
 
 import click
 import torch
-from pytorch_lightning import Trainer, seed_everything
-from pytorch_lightning.strategies import DDPStrategy
-from pytorch_lightning.utilities import rank_zero_only
-from tqdm import tqdm
-
 from boltz.data import const
 from boltz.data.module.inference import BoltzInferenceDataModule
 from boltz.data.msa.mmseqs2 import run_mmseqs2
@@ -22,6 +16,10 @@ from boltz.data.parse.yaml import parse_yaml
 from boltz.data.types import MSA, Manifest, Record
 from boltz.data.write.writer import BoltzWriter
 from boltz.model.model import Boltz1
+from pytorch_lightning import Trainer, seed_everything
+from pytorch_lightning.strategies import DDPStrategy
+from pytorch_lightning.utilities import rank_zero_only
+from tqdm import tqdm
 
 CCD_URL = "https://huggingface.co/boltz-community/boltz-1/resolve/main/ccd.pkl"
 MODEL_URL = (
@@ -363,7 +361,10 @@ def process_inputs(  # noqa: C901, PLR0912, PLR0915
                 raise RuntimeError(msg)
 
             if to_generate:
-                msg = f"Generating MSA for {path} with {len(to_generate)} protein entities."
+                msg = (
+                    f"Generating MSA for {path} with {len(to_generate)} "
+                    "protein entities."
+                )
                 click.echo(msg)
                 compute_msa(
                     data=to_generate,
@@ -423,6 +424,7 @@ def process_inputs(  # noqa: C901, PLR0912, PLR0915
     # Dump manifest
     manifest = Manifest(records)
     manifest.dump(out_dir / "processed" / "manifest.json")
+
 
 def predict(
     data: str,
@@ -573,12 +575,14 @@ def predict(
 
 
 if __name__ == "__main__":
-    predict(data="./inputs_prediction",
-            out_dir="./outputs_prediction",
-            cache="/kaggle/input/rna-prediction-boltz/",
-            diffusion_samples=1,
-            recycling_steps=10,
-            accelerator="gpu",
-            sampling_steps=500,
-            seed=42,
-            override=True)
+    predict(
+        data="./inputs_prediction",
+        out_dir="./outputs_prediction",
+        cache="/kaggle/input/rna-prediction-boltz/",
+        diffusion_samples=1,
+        recycling_steps=10,
+        accelerator="gpu",
+        sampling_steps=500,
+        seed=42,
+        override=True,
+    )

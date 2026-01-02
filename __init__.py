@@ -1,4 +1,3 @@
-
 """
 RNA Folding Module
 """

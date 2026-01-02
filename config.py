@@ -1,4 +1,3 @@
-
 import os
 
 # Paths
@@ -15,7 +14,6 @@ BOLTZ_CACHE = os.path.expanduser("~/.boltz")
 # DRfold settings
 # INDICES for processing range
 DRFOLD_START_IDX = 0
-DRFOLD_END_IDX = 1000 
+DRFOLD_END_IDX = 1000
 
-DRFOLD_TIME_LIMIT = 30000 # seconds
-
+DRFOLD_TIME_LIMIT = 30000  # seconds
