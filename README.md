@@ -295,6 +295,32 @@ uv run python training/train.py --help
     uv run python scripts/main.py drfold.time_limit=60000 drfold.end_idx=500
     ```
 
+## Experiment Tracking (MLflow)
+
+This project uses [MLflow](https://mlflow.org/) for experiment tracking.
+
+### Viewing Experiments
+
+1.  Start the MLflow UI:
+    ```bash
+    uv run mlflow ui
+    ```
+2.  Open http://127.0.0.1:5000 in your browser.
+
+### Configuration
+
+Logging is enabled by default. To disable it:
+
+```bash
+uv run python training/train.py logging.enabled=false
+```
+
+To use a remote tracking server, update `configs/logging/mlflow.yaml` or override via CLI:
+
+```bash
+uv run python training/train.py logging.tracking_uri=http://my-mlflow-server:5000
+```
+
 ## Configuration
 
 This project uses [Hydra](https://hydra.cc/) for configuration management. All hyperparameters are defined in YAML files under `configs/`.

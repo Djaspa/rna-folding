@@ -4,8 +4,9 @@ from pathlib import Path
 
 import hydra
 import pytorch_lightning as pl
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import MLFlowLogger
 
 # Add project root to path to ensure imports work
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -53,6 +54,28 @@ def main(cfg: DictConfig):
         lr=cfg.model.learning_rate,
     )
 
+    # Initialize Logger
+    logger = None
+    if cfg.logging.enabled:
+        tracking_uri = cfg.logging.tracking_uri
+        # If tracking_uri is a relative path (like "mlruns"), make it absolute
+        if not tracking_uri.startswith("http") and not Path(tracking_uri).is_absolute():
+            tracking_uri = str(root_dir / tracking_uri)
+
+        logger = MLFlowLogger(
+            experiment_name=cfg.logging.experiment_name,
+            tracking_uri=tracking_uri,
+            run_name=cfg.logging.run_name,
+            log_model=cfg.logging.log_model,
+            tags=cfg.logging.tags,
+        )
+
+        # Log all hyperparameters
+        logger.log_hyperparams(OmegaConf.to_container(cfg, resolve=True))
+        logging.info(f"MLflow logging enabled. Tracking URI: {tracking_uri}")
+    else:
+        logging.info("MLflow logging disabled.")
+
     # Callbacks
     checkpoint_callback = ModelCheckpoint(
         dirpath=root_dir / cfg.paths.checkpoints_dir,
@@ -67,6 +90,7 @@ def main(cfg: DictConfig):
         max_epochs=cfg.training.epochs,
         fast_dev_run=cfg.training.fast_dev_run,
         callbacks=[checkpoint_callback],
+        logger=logger,
         accelerator=cfg.training.accelerator,
         devices=cfg.training.devices,
     )

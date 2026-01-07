@@ -12,7 +12,8 @@ wheels/
 node_modules/.cache/
 
 *.zip
-
 *.ipynb
-
 *.json
+
+mlruns/
+outputs/

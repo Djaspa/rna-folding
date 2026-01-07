@@ -1,0 +1,8 @@
+# MLflow logging configuration
+
+enabled: true
+experiment_name: rna-folding
+tracking_uri: mlruns
+run_name: null
+log_model: false
+tags: {}

@@ -2,10 +2,11 @@
 # Composes all sub-configs using Hydra defaults
 
 defaults:
-  - paths
+  - paths: default
   - training: default
   - model: default
   - data: default
+  - logging: mlflow
   - _self_
 
 # Global settings

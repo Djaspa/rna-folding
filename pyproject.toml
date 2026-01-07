@@ -9,6 +9,7 @@ dependencies = [
     "dvc-gdrive>=3.0.1",
     "fire>=0.7.1",
     "hydra-core>=1.3.0",
+    "mlflow>=3.8.1",
     "omegaconf>=2.3.0",
     "pandas>=2.3.3",
     "pytorch-lightning>=2.6.0",
