@@ -12,6 +12,7 @@ from pytorch_lightning.loggers import MLFlowLogger
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dvc_utils import ensure_data_available  # noqa: E402
+from scripts.export_onnx import export_model_to_onnx  # noqa: E402
 from training.data_module import RNADataModule  # noqa: E402
 from training.lightning_model import RNALightningModule  # noqa: E402
 
@@ -97,6 +98,32 @@ def main(cfg: DictConfig):
 
     # Train
     trainer.fit(model, datamodule=dm)
+
+    # Export to ONNX if requested
+    if cfg.training.export_onnx:
+        logging.info("Exporting model to ONNX...")
+        best_model_path = trainer.checkpoint_callback.best_model_path
+        if best_model_path:
+            logging.info(f"Loading best checkpoint from {best_model_path}")
+            best_model = RNALightningModule.load_from_checkpoint(best_model_path)
+            export_model_to_onnx(
+                model=best_model,
+                output_path=str(root_dir / "model.onnx"),
+                vocab_size=cfg.model.vocab_size,
+                embed_dim=cfg.model.embed_dim,
+                hidden_dim=cfg.model.hidden_dim,
+                num_layers=cfg.model.num_layers,
+            )
+        else:
+            logging.warning("No best checkpoint found. Exporting current model state.")
+            export_model_to_onnx(
+                model=model,
+                output_path=str(root_dir / "model.onnx"),
+                vocab_size=cfg.model.vocab_size,
+                embed_dim=cfg.model.embed_dim,
+                hidden_dim=cfg.model.hidden_dim,
+                num_layers=cfg.model.num_layers,
+            )
 
 
 if __name__ == "__main__":

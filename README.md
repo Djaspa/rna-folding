@@ -367,3 +367,46 @@ To run checks manually:
 ```bash
 uv run pre-commit run --all-files
 ```
+
+## Deployment
+
+### ONNX Export
+
+You can export the trained PyTorch model to ONNX format either automatically during training or manually using a script.
+
+#### Automatic Export
+
+Enable the `export_onnx` flag in the training configuration:
+
+```bash
+uv run python training/train.py training.export_onnx=true
+```
+
+This will export the best model (or final model if checkpointing fails) to `model.onnx` in the project root.
+
+#### Manual Export
+
+Use the export script:
+
+```bash
+# Export from a specific checkpoint
+uv run python scripts/export_onnx.py --checkpoint_path checkoints/my_model.ckpt --output my_model.onnx
+
+# Export a fresh initialized model (for testing structure)
+uv run python scripts/export_onnx.py --output dummy_model.onnx
+```
+
+### TensorRT Conversion
+
+To convert an ONNX model to a TensorRT engine, use the conversion script. This requires `trtexec` to be installed and available in your PATH.
+
+```bash
+# Basic conversion
+uv run python scripts/convert_tensorrt.py --onnx model.onnx --output model.engine
+
+# Enable FP16 precision
+uv run python scripts/convert_tensorrt.py --onnx model.onnx --output model.engine --fp16
+
+# Verbose output
+uv run python scripts/convert_tensorrt.py --onnx model.onnx --verbose
+```

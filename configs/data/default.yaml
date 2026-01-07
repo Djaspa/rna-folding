@@ -2,5 +2,5 @@
 
 seq_csv: merged_sequences_final.csv
 label_csv: merged_labels_final.csv
-num_workers: 0
+num_workers: 13
 val_split: 0.1

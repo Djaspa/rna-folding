@@ -4,6 +4,7 @@ batch_size: 4
 epochs: 10
 fast_dev_run: false
 no_dvc_pull: false
+export_onnx: false
 
 # Trainer settings
 accelerator: auto
