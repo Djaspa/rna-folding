@@ -1,0 +1,7 @@
+# MLflow Serving configuration
+
+host: "127.0.0.1"
+port: 5001
+model_name: "rna-folding-model"
+model_version: "latest"
+workers: 1

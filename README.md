@@ -410,3 +410,72 @@ uv run python scripts/convert_tensorrt.py --onnx model.onnx --output model.engin
 # Verbose output
 uv run python scripts/convert_tensorrt.py --onnx model.onnx --verbose
 ```
+
+### MLflow Model Serving
+
+Serve your trained model as a REST API using MLflow.
+
+#### 1. Register the Model
+
+First, register a trained checkpoint with MLflow:
+
+```bash
+# Register from a checkpoint
+uv run python scripts/register_model.py --checkpoint checkpoints/rna-fold-epoch=01-val_loss=nan.ckpt
+
+# Custom model name
+uv run python scripts/register_model.py --checkpoint checkpoints/my_model.ckpt --model_name my-rna-model
+```
+
+View registered models in the MLflow UI:
+
+```bash
+uv run mlflow ui --backend-store-uri plots
+```
+
+#### 2. Start the Serving Endpoint
+
+```bash
+# Start with default config (port 5001)
+uv run python scripts/serve.py
+
+# Custom port
+uv run python scripts/serve.py --port 8080
+
+# Specific model version
+uv run python scripts/serve.py --model_version 1
+```
+
+#### 3. Make Predictions
+
+Send requests to the serving endpoint:
+
+```bash
+# Using curl (input: sequence indices where A=0, U=1, G=2, C=3, X=4)
+curl -X POST http://127.0.0.1:5001/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"inputs": [[0, 1, 2, 3, 1, 2, 0, 1, 2, 3]]}'
+```
+
+```python
+# Using Python requests
+import requests
+
+response = requests.post(
+    "http://127.0.0.1:5001/invocations",
+    json={"inputs": [[0, 1, 2, 3, 1, 2, 0, 1, 2, 3]]}
+)
+coords = response.json()  # Shape: (batch, seq_len, 3)
+```
+
+#### Serving Configuration
+
+Edit `configs/serving/mlflow_serving.yaml` to customize defaults:
+
+```yaml
+host: "127.0.0.1"
+port: 5001
+model_name: "rna-folding-model"
+model_version: "latest"
+workers: 1
+```

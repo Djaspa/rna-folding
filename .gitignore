@@ -14,7 +14,11 @@ node_modules/.cache/
 *.zip
 *.ipynb
 *.json
+*.onnx
+*.onnx.data
 
 plots/
 outputs/
 checkpoints/
+
+mlflow.db
