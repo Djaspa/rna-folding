@@ -1,15 +1,15 @@
-import os
+from pathlib import Path
 
 # Paths
-BASE_DIR = os.getcwd()
-INPUTS_DIR = os.path.join(BASE_DIR, "inputs_prediction")
-OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs_prediction")
-PREDICTIONS_DIR = os.path.join(BASE_DIR, "predictions_dir")
-FASTA_DIR = os.path.join(BASE_DIR, "fasta_dir")
-DRFOLD_DIR = os.path.join(BASE_DIR, "DRfold2")
+BASE_DIR = Path.cwd()
+INPUTS_DIR = BASE_DIR / "inputs_prediction"
+OUTPUTS_DIR = BASE_DIR / "outputs_prediction"
+PREDICTIONS_DIR = BASE_DIR / "predictions_dir"
+FASTA_DIR = BASE_DIR / "fasta_dir"
+DRFOLD_DIR = BASE_DIR / "DRfold2"
 
 # Boltz settings
-BOLTZ_CACHE = os.path.expanduser("~/.boltz")
+BOLTZ_CACHE = Path.home() / ".boltz"
 
 # DRfold settings
 # INDICES for processing range

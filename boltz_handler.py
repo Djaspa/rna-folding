@@ -1,6 +1,6 @@
 import logging
-import os
 import subprocess
+from pathlib import Path
 
 import pandas as pd
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
@@ -14,15 +14,14 @@ def prepare_inputs(test_sequences_csv):
     """
     Generates YAML input files for Boltz inference from the test sequences CSV.
     """
-    if not os.path.exists(INPUTS_DIR):
-        os.makedirs(INPUTS_DIR)
+    INPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
     sub_file = pd.read_csv(test_sequences_csv)
     names = sub_file["target_id"].tolist()
     sequences = sub_file["sequence"].tolist()
 
     for tmp_id, tmp_sequence in zip(names, sequences):
-        with open(os.path.join(INPUTS_DIR, f"{tmp_id}.yaml"), "w") as f:
+        with open(INPUTS_DIR / f"{tmp_id}.yaml", "w") as f:
             f.write("constraints: []\n")
             f.write("sequences:\n")
             f.write("- rna:\n")
@@ -40,7 +39,7 @@ def run_inference(inference_script_path):
     # In the notebook it was called as 'python inference.py' assuming it was in CWD.
     # We will pass the absolute path.
 
-    cmd = ["python", inference_script_path]
+    cmd = ["python", str(inference_script_path)]
 
     # The inference script in the notebook hardcoded paths (e.g. ./inputs_prediction).
     # We might need to ensure the CWD is correct or update the script to take args.
@@ -48,7 +47,7 @@ def run_inference(inference_script_path):
     # To avoid modifying the script too much, we'll run it from the base dir where
     # inputs_prediction exists.
 
-    cwd = os.getcwd()  # Should be the project root where inputs_prediction is
+    cwd = Path.cwd()  # Should be the project root where inputs_prediction is
 
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd)
     logger.info(f"Command output: {result.stdout}")
@@ -66,16 +65,14 @@ def get_coords(tmp_id, idx):
     # The notebook path structure for outputs:
     # outputs_prediction/boltz_results_inputs_prediction/predictions/{tmp_id}/{tmp_id}_model_{idx}.cif
 
-    cif_dir = os.path.join(
-        OUTPUTS_DIR, "boltz_results_inputs_prediction", "predictions", tmp_id
-    )
-    cif_file = os.path.join(cif_dir, f"{tmp_id}_model_{idx}.cif")
+    cif_dir = OUTPUTS_DIR / "boltz_results_inputs_prediction" / "predictions" / tmp_id
+    cif_file = cif_dir / f"{tmp_id}_model_{idx}.cif"
 
-    if not os.path.exists(cif_file):
+    if not cif_file.exists():
         logger.warning(f"CIF file not found: {cif_file}")
         return None
 
-    mmcif_dict = MMCIF2Dict(cif_file)
+    mmcif_dict = MMCIF2Dict(str(cif_file))
     # entity_poly_seq = mmcif_dict.get("_entity_poly_seq.mon_id", [])
     # sequence = "".join(entity_poly_seq)
 

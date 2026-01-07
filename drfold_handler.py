@@ -1,7 +1,7 @@
 import logging
-import os
 import shutil
 import subprocess
+from pathlib import Path
 
 from Bio.PDB import PDBIO, MMCIFParser, Select
 
@@ -36,10 +36,13 @@ def convert_cif_to_pdb(cif_file, pdb_file):
     """
     Convert mmCIF file to PDB format, fixing chain IDs and keeping only needed atoms.
     """
+    cif_file = Path(cif_file)
+    pdb_file = Path(pdb_file)
+
     try:
         # Parse the mmCIF file
         parser = MMCIFParser(QUIET=True)
-        structure = parser.get_structure("", cif_file)
+        structure = parser.get_structure("", str(cif_file))
 
         # Fix chain IDs (map multi-character IDs like 'A1' to single characters)
         for model in structure:
@@ -51,7 +54,7 @@ def convert_cif_to_pdb(cif_file, pdb_file):
         # Write to PDB format, selecting only atoms needed by DRfold2
         io = PDBIO()
         io.set_structure(structure)
-        io.save(pdb_file, RNAAtomSelect())
+        io.save(str(pdb_file), RNAAtomSelect())
         return True
     except Exception as e:
         logger.error(f"Error converting {cif_file} to PDB: {str(e)}")
@@ -59,7 +62,7 @@ def convert_cif_to_pdb(cif_file, pdb_file):
         # Attempt alternative approach if primary method fails
         try:
             parser = MMCIFParser(QUIET=True)
-            structure = parser.get_structure("", cif_file)
+            structure = parser.get_structure("", str(cif_file))
 
             # Create a new PDB file manually
             with open(pdb_file, "w") as f:
@@ -108,7 +111,9 @@ def setup_drfold(patches_dir):
     """
     Sets up the DRfold2 environment: copies necessary files and applies patches.
     """
-    if not os.path.exists(DRFOLD_DIR):
+    patches_dir = Path(patches_dir)
+
+    if not DRFOLD_DIR.exists():
         # In a real scenario, we might clone it. For now, we assume it exists
         # or we log a warning.
         logger.warning(
@@ -139,22 +144,22 @@ def setup_drfold(patches_dir):
     }
 
     for patch_file, dest_rel_path in patch_map.items():
-        src = os.path.join(patches_dir, patch_file)
-        dest = os.path.join(DRFOLD_DIR, dest_rel_path)
+        src = patches_dir / patch_file
+        dest = DRFOLD_DIR / dest_rel_path
 
-        if os.path.exists(src):
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
+        if src.exists():
+            dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dest)
             logger.info(f"Copied {src} to {dest}")
         else:
             logger.warning(f"Patch file {src} not found")
 
     # Compile Arena
-    arena_src = os.path.join(DRFOLD_DIR, "Arena", "Arena.cpp")
-    arena_exe = os.path.join(DRFOLD_DIR, "Arena", "Arena")
-    if os.path.exists(arena_src):
+    arena_src = DRFOLD_DIR / "Arena" / "Arena.cpp"
+    arena_exe = DRFOLD_DIR / "Arena" / "Arena"
+    if arena_src.exists():
         logger.info("Compiling Arena...")
-        subprocess.run(["g++", "-O3", arena_src, "-o", arena_exe], check=True)
+        subprocess.run(["g++", "-O3", str(arena_src), "-o", str(arena_exe)], check=True)
         logger.info("Arena compiled.")
     else:
         logger.warning(f"Arena source {arena_src} not found.")
@@ -166,20 +171,19 @@ def predict_rna_structures_drfold2(
     """
     Use DRfold2 to predict RNA structures with proper output capture
     """
+    af3_pdb = Path(af3_pdb) if af3_pdb else None
 
     # Create FASTA file for this sequence
-    if not os.path.exists(FASTA_DIR):
-        os.makedirs(FASTA_DIR)
+    FASTA_DIR.mkdir(parents=True, exist_ok=True)
 
-    fasta_path = os.path.join(FASTA_DIR, f"{target_id}.fasta")
+    fasta_path = FASTA_DIR / f"{target_id}.fasta"
     with open(fasta_path, "w") as f:
         f.write(f">{target_id}\n{sequence}\n")
 
     # Run DRfold2 with proper output capture
-    if not os.path.exists(PREDICTIONS_DIR):
-        os.makedirs(PREDICTIONS_DIR)
+    PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
 
-    output_dir = os.path.join(PREDICTIONS_DIR, target_id)
+    output_dir = PREDICTIONS_DIR / target_id
 
     # Build command with optional AF3 integration
     # We assume 'scripts/drfold_infer.py' acts as the entry point or we call
@@ -194,10 +198,10 @@ def predict_rna_structures_drfold2(
     # find other files.
     # So it MUST reside in the `DRfold2` directory structure.
 
-    drfold_script = os.path.join(DRFOLD_DIR, "DRfold_infer.py")
+    drfold_script = DRFOLD_DIR / "DRfold_infer.py"
 
     cmd = f"python {drfold_script} {fasta_path} {output_dir} 1"
-    if af3_pdb and os.path.exists(af3_pdb):
+    if af3_pdb and af3_pdb.exists():
         cmd += f" --af3 {af3_pdb}"
         logger.info(f"Using AlphaFold3 structure from: {af3_pdb}")
     elif af3_pdb:
@@ -226,17 +230,17 @@ def predict_rna_structures_drfold2(
         return None
 
     # Clean up FASTA file to save space
-    if os.path.exists(fasta_path):
-        os.remove(fasta_path)
+    if fasta_path.exists():
+        fasta_path.unlink()
 
     # Extract coordinates
-    relax_dir = os.path.join(output_dir, "relax")
-    if not os.path.isdir(relax_dir):
+    relax_dir = output_dir / "relax"
+    if not relax_dir.is_dir():
         logger.warning(f"No relax directory found for {target_id}")
         relax_dir = output_dir
 
     # Get up to 5 PDB files
-    pdb_files = sorted([f for f in os.listdir(relax_dir) if f.endswith(".pdb")])[:5]
+    pdb_files = sorted([f.name for f in relax_dir.iterdir() if f.suffix == ".pdb"])[:5]
 
     if not pdb_files:
         logger.warning(f"No PDB files found for {target_id}")
@@ -245,7 +249,7 @@ def predict_rna_structures_drfold2(
     # Parse PDB files to extract C1' coordinates
     predictions = []
     for pdb_file in pdb_files:
-        file_path = os.path.join(relax_dir, pdb_file)
+        file_path = relax_dir / pdb_file
 
         # Read PDB file
         coords = []
@@ -272,7 +276,7 @@ def predict_rna_structures_drfold2(
         predictions.append(coords)
 
     # Clean up PDB files to save space
-    if is_submission_mode and os.path.exists(output_dir):
+    if is_submission_mode and output_dir.exists():
         shutil.rmtree(output_dir)
 
     # If we have fewer than 5 predictions, duplicate the last one

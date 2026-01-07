@@ -1,6 +1,6 @@
 import argparse
-import os
 import sys
+from pathlib import Path
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -9,7 +9,7 @@ from training.data_module import RNADataModule
 from training.lightning_model import RNALightningModule
 
 # Add project root to path to ensure imports work
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 
 def main():
@@ -26,9 +26,9 @@ def main():
     pl.seed_everything(42)
 
     # Initialize DataModule
-    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    seq_csv = os.path.join(root_dir, "merged_sequences_final.csv")
-    label_csv = os.path.join(root_dir, "merged_labels_final.csv")
+    root_dir = Path(__file__).resolve().parent.parent
+    seq_csv = root_dir / "merged_sequences_final.csv"
+    label_csv = root_dir / "merged_labels_final.csv"
 
     dm = RNADataModule(seq_csv=seq_csv, label_csv=label_csv, batch_size=args.batch_size)
 
@@ -37,7 +37,7 @@ def main():
 
     # Callbacks
     checkpoint_callback = ModelCheckpoint(
-        dirpath=os.path.join(root_dir, "checkpoints"),
+        dirpath=root_dir / "checkpoints",
         filename="rna-fold-{epoch:02d}-{val_loss:.2f}",
         save_top_k=3,
         monitor="val_loss",

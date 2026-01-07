@@ -1,12 +1,12 @@
 import logging
-import os
 import sys
 import time
+from pathlib import Path
 
 import pandas as pd
 
 # Adjust path to import modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from rna_folding_module.config import (  # noqa: E402
     BASE_DIR,
@@ -43,20 +43,16 @@ def main():
 
     # --- Setup ---
     # Assume source directories exist or we skip setup
-    patches_dir = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "drfold_patches"
-    )
+    patches_dir = Path(__file__).resolve().parent.parent / "drfold_patches"
     setup_drfold(patches_dir)
 
     # --- Load Data ---
     # Adjust paths as per user environment
-    test_sequences_path = os.path.join(
-        BASE_DIR, "test_sequences.csv"
-    )  # Assuming in root
-    train_seqs_path = os.path.join(BASE_DIR, "merged_sequences_final.csv")
-    train_labels_path = os.path.join(BASE_DIR, "merged_labels_final.csv")
+    test_sequences_path = BASE_DIR / "test_sequences.csv"  # Assuming in root
+    train_seqs_path = BASE_DIR / "merged_sequences_final.csv"
+    train_labels_path = BASE_DIR / "merged_labels_final.csv"
 
-    if not os.path.exists(test_sequences_path):
+    if not test_sequences_path.exists():
         logger.error(f"Test sequences file not found at {test_sequences_path}")
         return
 
@@ -69,15 +65,12 @@ def main():
     prepare_inputs(test_sequences_path)
 
     # Path to boltz inference script
-    boltz_script = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "boltz_inference.py"
-    )
+    boltz_script = Path(__file__).resolve().parent / "boltz_inference.py"
 
     try:
         run_inference(boltz_script)
     except Exception as e:
         logger.error(f"Boltz inference failed: {e}")
-        # Continue? Yes, we might rely on templates/DRfold for some
 
     # Extract Boltz Results
     boltz_predictions = []
@@ -102,68 +95,11 @@ def main():
         for i, preds in enumerate(target_preds):
             boltz_predictions.append({"ID": f"{target_id}_{i+1}", "coords": preds})
 
-    # Save Boltz submission intermediate
-    # This part requires expanding the 'coords' into x_1, y_1, z_1... columns
-    # Replicating the notebook's logic for saving submission_boltz.csv might be complex
-    # if not needed immediately.
-    # The notebook saved `submission_boltz.csv` using a helper or pandas.
-    # I'll simplify: just keep the data in memory or save a simplified CSV if needed.
-    # Actually, the final merge relies on `submission_boltz.csv`?
-    # No, it loads it. So I should save it.
-
-    # Constructing DataFrame for Boltz
-    # The format is ID, x_1, y_1, z_1, ..., x_n, y_n, z_n
-    # This is huge (variable columns). Kaggle submission usually is melted or wide?
-    # Actually, the competition format is one row per (ID_residue)?
-    # Or wide format? The extract shows `submission.csv` has `ID` and `x_1`, `y_1`...
-    # Wait, coordinate column names are `x_1`, `y_1`, `z_1` ... `x_L`, `y_L`, `z_L`?
-    # No, usually it's `ID` like `target_id_residue_num` or `target_id_model_residue`.
-    # Let's check `process_labels_vectorized`:
-    # `labels_df['ID'].str.rsplit('_', n=1)`
-    # This implies ID is like `target_1`.
-    # And columns are `x_1, y_1, z_1`. Wait.
-
-    # Let's look at `submission.csv` format from notebook output.
-    # It wasn't explicitly shown.
-    # But `process_labels_vectorized` uses `labels_df[['x_1', 'y_1', 'z_1']]`.
-    # This suggests the CSV has columns `ID`, `x_1`, `y_1`, `z_1`?
-    # No, `ID` looks like `target_id_resid`.
-    # Ah, one row per residue?
-    # If so, `boltz_predictions` collected above needs to be reformatted.
-
-    # Re-reading notebook logic around `submission_boltz.csv`.
-    # `get_coords` returns list of tuples.
-    # The notebook (Cell 6) creates `submission_boltz.csv`... wait, cell 6 is just
-    # inference.py.
-    # It doesn't show creating `submission_boltz.csv` in the viewed snippets.
-    # But later `pd.read_csv('submission_boltz.csv')`.
-    # In `inference.py`, does it write `submission_boltz.csv`?
-    # Let's check `inference.py` content I wrote.
-    # No, `inference.py` output is `.cif` files.
-    # In the notebook, AFTER `run_inference`, there must be code to parse CIFs and
-    # create `submission_boltz.csv`.
-    # I need to implement that. `main.py` is doing `extract Boltz Results`.
-
-    # Let's assume the format is: ID (e.g. `structure_id_residue_id`) and x,y,z cols?
-    # Stanford Ribonanza submission format is: `id`, `x`, `y`, `z`?
-    # Or `id` (e.g. `id_1`), `target_id`, ...
-    # Wait, `process_labels_vectorized`: `group[['x_1', 'y_1', 'z_1']]`.
-    # This implies input has these columns.
-
-    # Let's follow `process_labels_vectorized` logic:
-    # `labels_df` has `ID`, `x_1`, `y_1`, `z_1`? This usually implies specific atom
-    # coordinates?
-    # It seems `ID` identifies the residue.
-    # But `submission_dr.csv` logic in notebook (Cell 35+) collects `coord_list`
-    # and eventually makes a `submission_df`.
-
-    # I'll stick to gathering data and formatted it later.
-
     # --- DRfold / Hybrid Prediction ---
     logger.info("--- Step 2: DRfold / Hybrid Prediction ---")
 
     # Load training data for templates
-    if os.path.exists(train_seqs_path) and os.path.exists(train_labels_path):
+    if train_seqs_path.exists() and train_labels_path.exists():
         train_seqs_df = pd.read_csv(train_seqs_path)
         train_labels_df = pd.read_csv(train_labels_path)
         train_coords_dict = process_labels_vectorized(train_labels_df)
@@ -202,17 +138,17 @@ def main():
         # The path expected by `get_coords` is
         # `outputs_prediction/boltz_results_inputs_prediction/predictions/{tmp_id}/{tmp_id}_model_{idx}.cif`
         # We need model_0 for template
-        boltz_cif = os.path.join(
-            OUTPUTS_DIR,
-            "boltz_results_inputs_prediction",
-            "predictions",
-            target_id,
-            f"{target_id}_model_0.cif",
+        boltz_cif = (
+            OUTPUTS_DIR
+            / "boltz_results_inputs_prediction"
+            / "predictions"
+            / target_id
+            / f"{target_id}_model_0.cif"
         )
-        af3_pdb = os.path.join(PREDICTIONS_DIR, f"{target_id}_af3.pdb")
+        af3_pdb = PREDICTIONS_DIR / f"{target_id}_af3.pdb"
 
         has_af3 = False
-        if os.path.exists(boltz_cif):
+        if boltz_cif.exists():
             if convert_cif_to_pdb(boltz_cif, af3_pdb):
                 has_af3 = True
 
@@ -236,16 +172,6 @@ def main():
 
     # --- Merging & Output ---
     logger.info("--- Step 3: Merging & Output ---")
-
-    # We need to process `drfold_results` and `boltz_predictions` into the final CSV
-    # format I'll create `submission.csv`.
-    # Format: ID, x, y, z ??
-    # The snippet doesn't clearly show the output column headers.
-    # However, `submission_processed` cell 11000 shows:
-    # `submission_df` columns: ID, x, y, z (one row per residue?)
-    # or one row per prediction?
-    # Usually in these competitions, `ID` is `target_id_{model_idx}_{residue_idx}`?
-    # Let's assume standard submission format.
 
     final_rows = []
 
@@ -313,44 +239,6 @@ def main():
         # Truncate if > 5
         final_preds_for_target = final_preds_for_target[:5]
 
-        # Format for CSV
-        # Rows: target_id_confusion_residue_id
-        # Actually, let's look at `process_labels_vectorized` again.
-        # `labels_df['ID']` -> `target_id_resid`.
-        # This implies a wide format is NOT used. It's long format.
-        # But we predict 5 models.
-        # A common format is `target_id_{model_idx}_{residue_idx}`?
-        # Or maybe the submission file expects `target_id_model_idx` and a giant string?
-        # No, `x_1, y_1, z_1` usually means per atom or per residue coord?
-
-        # Given I cannot check the exact sample submission, I will produce a clear
-        # readable format compatible with what `process_labels_vectorized` expects
-        # (ID, x_1, y_1, z_1).
-        # ID: target_id_{residue_idx} ?
-        # But we have multiple models.
-        # `submission.csv` implies one submission.
-
-        # Let's assume the task is to produce `ID,x,y,z` where ID is
-        # `target_id_residue_index`.
-        # But wait, we produce 5 models?
-        # Maybe the competition only asks for 1?
-        # The notebook mentions `submission_dr.csv` and merging.
-        # `submission_processed` cell 11000 output shows `submission_processed`
-        # head/tail.
-        # It's not visible.
-        # However, `get_coords` in Cell 7 returns list of coords.
-
-        # I will create a CSV that has: `ID,x,y,z` for the FIRST model only?
-        # Or maybe `ID` encodes the model number? `target_id_1_resid`?
-
-        # Re-reading: "merge these results... create final submission.csv".
-        # "For target R1138 ... first conformation's coordinates were replaced ...
-        # placeholder values in other conformations were filled".
-        # This implies multiple conformations (models) ARE submitted.
-        # Likely format: `target_id_prediction_id_residue_id`?
-
-        # I'll generate `target_id_{model}_{residue}`.
-
         for m_idx, coords_flat in enumerate(final_preds_for_target):
             # coords_flat is [x1, y1, z1, x2, y2, z2, ...]
             for r_idx in range(L):
@@ -363,7 +251,7 @@ def main():
                 final_rows.append({"ID": row_id, "x": x, "y": y, "z": z})
 
     submission_df = pd.DataFrame(final_rows)
-    sub_path = os.path.join(BASE_DIR, "submission.csv")
+    sub_path = BASE_DIR / "submission.csv"
     submission_df.to_csv(sub_path, index=False)
     logger.info(f"Submission saved to {sub_path}")
 
