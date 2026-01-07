@@ -1,0 +1,7 @@
+# Model architecture parameters
+
+vocab_size: 5
+embed_dim: 64
+hidden_dim: 128
+num_layers: 2
+learning_rate: 1.0e-3

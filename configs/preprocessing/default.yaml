@@ -1,0 +1,12 @@
+# Data preparation settings
+
+data_dir: data
+output_dir: data
+sequences_only: false
+labels_only: false
+
+# Data source subdirectories
+sources:
+  stanford_dir: stanford-rna-3d-folding
+  extended_dir: extended-rna
+  cif_dir: rna-cif-to-csv

@@ -78,14 +78,30 @@ DRfold2 outputs.
 
 ```
 rna_folding/
-├── config.py                 # Configuration parameters and paths
+├── constants.py              # Global constants (vocabulary, structural params)
 ├── boltz_handler.py          # Boltz-1 input preparation and inference
 ├── drfold_handler.py         # DRfold2 setup, CIF→PDB conversion, inference
 ├── template_modeler.py       # Template-based prediction and de novo fallbacks
 ├── dvc_utils.py              # DVC utility functions for data management
 │
+├── configs/                  # Hydra configuration files
+│   ├── config.yaml           # Main training config entrypoint
+│   ├── inference.yaml        # Main inference config entrypoint
+│   ├── paths.yaml            # Path configurations
+│   ├── training/
+│   │   └── default.yaml      # Training hyperparameters
+│   ├── model/
+│   │   └── default.yaml      # Model architecture parameters
+│   ├── data/
+│   │   └── default.yaml      # DataModule settings
+│   ├── inference/
+│   │   ├── drfold.yaml       # DRfold inference settings
+│   │   └── boltz.yaml        # Boltz inference settings
+│   └── preprocessing/
+│       └── default.yaml      # Data preparation settings
+│
 ├── scripts/                  # Executable scripts
-│   ├── main.py               # Main orchestration script
+│   ├── main.py               # Main orchestration script (uses Hydra)
 │   ├── boltz_inference.py    # Standalone Boltz inference (called by handler)
 │   ├── cif_to_csv.py         # CIF to CSV extraction script
 │   └── prepare_data.py       # Data preparation and merging script
@@ -93,7 +109,7 @@ rna_folding/
 ├── training/                 # PyTorch Lightning training module
 │   ├── data_module.py        # LightningDataModule for RNA datasets
 │   ├── lightning_model.py    # LightningModule for model training
-│   └── train.py              # Training entry point
+│   └── train.py              # Training entry point (uses Hydra)
 │
 ├── drfold_patches/           # Modified DRfold2 source code
 │   ├── Optimization.py       # Optimized energy minimization
@@ -239,10 +255,10 @@ Training and inference commands automatically pull missing data via DVC. To skip
 
 ```bash
 # Training
-uv run python -m training.train --no_dvc_pull
+uv run python training/train.py training.no_dvc_pull=true
 
 # Inference
-uv run scripts/main.py --no_dvc_pull
+uv run python scripts/main.py no_dvc_pull=true
 ```
 
 ## Usage
@@ -251,13 +267,19 @@ uv run scripts/main.py --no_dvc_pull
 
 ```bash
 # Run training (auto-pulls data if missing)
-uv run python -m training.train
+uv run python training/train.py
 
 # Quick validation run
-uv run python -m training.train --fast_dev_run
+uv run python training/train.py training.fast_dev_run=true
 
 # Custom batch size and epochs
-uv run python -m training.train --batch_size 8 --epochs 20
+uv run python training/train.py training.batch_size=8 training.epochs=20
+
+# Override model hyperparameters
+uv run python training/train.py model.learning_rate=0.01 model.hidden_dim=256
+
+# Show all available configuration options
+uv run python training/train.py --help
 ```
 
 ### Inference
@@ -267,8 +289,48 @@ uv run python -m training.train --batch_size 8 --epochs 20
 3.  Run the inference pipeline:
 
     ```bash
-    uv run scripts/main.py
+    uv run python scripts/main.py
+
+    # Override inference settings
+    uv run python scripts/main.py drfold.time_limit=60000 drfold.end_idx=500
     ```
+
+## Configuration
+
+This project uses [Hydra](https://hydra.cc/) for configuration management. All hyperparameters are defined in YAML files under `configs/`.
+
+### Config Structure
+
+| Config                  | Description                                      |
+| ----------------------- | ------------------------------------------------ |
+| `config.yaml`           | Main training entrypoint                         |
+| `inference.yaml`        | Main inference entrypoint                        |
+| `paths.yaml`            | Directory paths                                  |
+| `training/default.yaml` | Batch size, epochs, checkpoint settings          |
+| `model/default.yaml`    | Model architecture (embed_dim, hidden_dim, etc.) |
+| `data/default.yaml`     | DataModule settings (val_split, num_workers)     |
+| `inference/drfold.yaml` | DRfold settings (time_limit, index ranges)       |
+| `inference/boltz.yaml`  | Boltz diffusion parameters                       |
+
+### Overriding Config Values
+
+```bash
+# Override single values
+uv run python training/train.py training.batch_size=16
+
+# Override nested values
+uv run python training/train.py training.checkpoint.save_top_k=5
+
+# Multiple overrides
+uv run python training/train.py training.epochs=50 model.learning_rate=0.0001
+
+# Show composed config
+uv run python training/train.py --cfg job
+```
+
+### Global Constants
+
+Fixed constants that shouldn't be configurable (like RNA vocabulary) are defined in `constants.py`.
 
 ## Development
 
@@ -279,7 +341,3 @@ To run checks manually:
 ```bash
 uv run pre-commit run --all-files
 ```
-
-## Configuration
-
-Modify `config.py` to adjust paths, time limits, and prediction ranges.

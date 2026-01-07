@@ -1,0 +1,6 @@
+# DataModule parameters
+
+seq_csv: merged_sequences_final.csv
+label_csv: merged_labels_final.csv
+num_workers: 0
+val_split: 0.1

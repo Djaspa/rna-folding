@@ -30,10 +30,22 @@ class SimpleRNAFoldingModel(nn.Module):
 
 
 class RNALightningModule(pl.LightningModule):
-    def __init__(self, vocab_size=5, lr=1e-3):
+    def __init__(
+        self,
+        vocab_size: int = 5,
+        embed_dim: int = 64,
+        hidden_dim: int = 128,
+        num_layers: int = 2,
+        lr: float = 1e-3,
+    ):
         super().__init__()
         self.save_hyperparameters()
-        self.model = SimpleRNAFoldingModel(vocab_size=vocab_size)
+        self.model = SimpleRNAFoldingModel(
+            vocab_size=vocab_size,
+            embed_dim=embed_dim,
+            hidden_dim=hidden_dim,
+            num_layers=num_layers,
+        )
         self.lr = lr
 
     def forward(self, x):

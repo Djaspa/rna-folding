@@ -1,0 +1,13 @@
+# Path configurations
+# All paths are relative to project root unless absolute
+
+data_dir: data
+inputs_dir: inputs_prediction
+outputs_dir: outputs_prediction
+predictions_dir: predictions_dir
+fasta_dir: fasta_dir
+drfold_dir: DRfold2
+checkpoints_dir: checkpoints
+
+# Boltz cache uses home directory
+boltz_cache: ${oc.env:HOME}/.boltz

@@ -4,10 +4,30 @@ import subprocess
 from pathlib import Path
 
 from Bio.PDB import PDBIO, MMCIFParser, Select
-
-from ..config import DRFOLD_DIR, FASTA_DIR, PREDICTIONS_DIR
+from omegaconf import DictConfig
 
 logger = logging.getLogger(__name__)
+
+
+def get_drfold_dir(cfg: DictConfig, root_dir: Path = None) -> Path:
+    """Get the DRfold directory from config."""
+    if root_dir is None:
+        root_dir = Path.cwd()
+    return root_dir / cfg.paths.drfold_dir
+
+
+def get_fasta_dir(cfg: DictConfig, root_dir: Path = None) -> Path:
+    """Get the FASTA directory from config."""
+    if root_dir is None:
+        root_dir = Path.cwd()
+    return root_dir / cfg.paths.fasta_dir
+
+
+def get_predictions_dir(cfg: DictConfig, root_dir: Path = None) -> Path:
+    """Get the predictions directory from config."""
+    if root_dir is None:
+        root_dir = Path.cwd()
+    return root_dir / cfg.paths.predictions_dir
 
 
 class RNAAtomSelect(Select):
@@ -107,31 +127,26 @@ def convert_cif_to_pdb(cif_file, pdb_file):
             return False
 
 
-def setup_drfold(patches_dir):
+def setup_drfold(patches_dir, cfg: DictConfig = None):
     """
     Sets up the DRfold2 environment: copies necessary files and applies patches.
     """
     patches_dir = Path(patches_dir)
+    root_dir = Path.cwd()
 
-    if not DRFOLD_DIR.exists():
-        # In a real scenario, we might clone it. For now, we assume it exists
-        # or we log a warning.
+    if cfg is not None:
+        drfold_dir = get_drfold_dir(cfg, root_dir)
+    else:
+        drfold_dir = root_dir / "DRfold2"
+
+    if not drfold_dir.exists():
         logger.warning(
-            f"DRfold directory {DRFOLD_DIR} does not exist. "
+            f"DRfold directory {drfold_dir} does not exist. "
             f"Please ensure it is present."
         )
 
     # Apply patches
-    logger.info(f"Applying patches from {patches_dir} to {DRFOLD_DIR}")
-
-    # Map patch files to their destinations in DRfold2
-    # The structure in notebooks suggests:
-    # patches/Optimization.py -> DRfold2/PotentialFold/Optimization.py
-    # patches/Selection.py -> DRfold2/PotentialFold/Selection.py
-    # patches/Cubic.py -> DRfold2/PotentialFold/Cubic.py
-    # patches/operations.py -> DRfold2/PotentialFold/operations.py
-    # patches/cfg_for_folding.json -> DRfold2/cfg_for_folding.json
-    # patches/cfg_for_selection.json -> DRfold2/cfg_for_selection.json
+    logger.info(f"Applying patches from {patches_dir} to {drfold_dir}")
 
     patch_map = {
         "Optimization.py": "PotentialFold/Optimization.py",
@@ -145,7 +160,7 @@ def setup_drfold(patches_dir):
 
     for patch_file, dest_rel_path in patch_map.items():
         src = patches_dir / patch_file
-        dest = DRFOLD_DIR / dest_rel_path
+        dest = drfold_dir / dest_rel_path
 
         if src.exists():
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -155,8 +170,8 @@ def setup_drfold(patches_dir):
             logger.warning(f"Patch file {src} not found")
 
     # Compile Arena
-    arena_src = DRFOLD_DIR / "Arena" / "Arena.cpp"
-    arena_exe = DRFOLD_DIR / "Arena" / "Arena"
+    arena_src = drfold_dir / "Arena" / "Arena.cpp"
+    arena_exe = drfold_dir / "Arena" / "Arena"
     if arena_src.exists():
         logger.info("Compiling Arena...")
         subprocess.run(["g++", "-O3", str(arena_src), "-o", str(arena_exe)], check=True)
@@ -166,39 +181,36 @@ def setup_drfold(patches_dir):
 
 
 def predict_rna_structures_drfold2(
-    sequence, target_id, af3_pdb=None, is_submission_mode=False
+    sequence, target_id, af3_pdb=None, cfg: DictConfig = None, is_submission_mode=False
 ):
     """
     Use DRfold2 to predict RNA structures with proper output capture
     """
     af3_pdb = Path(af3_pdb) if af3_pdb else None
+    root_dir = Path.cwd()
+
+    if cfg is not None:
+        fasta_dir = get_fasta_dir(cfg, root_dir)
+        predictions_dir = get_predictions_dir(cfg, root_dir)
+        drfold_dir = get_drfold_dir(cfg, root_dir)
+    else:
+        fasta_dir = root_dir / "fasta_dir"
+        predictions_dir = root_dir / "predictions_dir"
+        drfold_dir = root_dir / "DRfold2"
 
     # Create FASTA file for this sequence
-    FASTA_DIR.mkdir(parents=True, exist_ok=True)
+    fasta_dir.mkdir(parents=True, exist_ok=True)
 
-    fasta_path = FASTA_DIR / f"{target_id}.fasta"
+    fasta_path = fasta_dir / f"{target_id}.fasta"
     with open(fasta_path, "w") as f:
         f.write(f">{target_id}\n{sequence}\n")
 
     # Run DRfold2 with proper output capture
-    PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
+    predictions_dir.mkdir(parents=True, exist_ok=True)
 
-    output_dir = PREDICTIONS_DIR / target_id
+    output_dir = predictions_dir / target_id
 
-    # Build command with optional AF3 integration
-    # We assume 'scripts/drfold_infer.py' acts as the entry point or we call
-    # the one in DRfold2 dir?
-    # The notebook writes to /kaggle/working/DRfold2/DRfold_infer.py
-    # And calls `python /kaggle/working/DRfold2/DRfold_infer.py ...`
-    # We should probably use that script location if we patched it/copied it there.
-    # We will assume we copy our `scripts/drfold_infer.py` to `DRfold2/DRfold_infer.py`
-    # during setup?
-    # Or just call it from `scripts/` but it might depend on CWD.
-    # The script uses `exp_dir = os.path.dirname(os.path.abspath(__file__))` to
-    # find other files.
-    # So it MUST reside in the `DRfold2` directory structure.
-
-    drfold_script = DRFOLD_DIR / "DRfold_infer.py"
+    drfold_script = drfold_dir / "DRfold_infer.py"
 
     cmd = f"python {drfold_script} {fasta_path} {output_dir} 1"
     if af3_pdb and af3_pdb.exists():

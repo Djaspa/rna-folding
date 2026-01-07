@@ -1,0 +1,14 @@
+# DRfold inference settings
+
+# Processing range indices
+start_idx: 0
+end_idx: 1000
+
+# Time limit in seconds
+time_limit: 30000
+
+# Sequence length threshold - prefer Boltz for sequences longer than this
+sequence_length_threshold: 600
+
+# Number of structure conformations to generate
+num_conformations: 5

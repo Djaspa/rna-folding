@@ -1,0 +1,12 @@
+# Inference pipeline configuration
+# Composes inference-specific configs
+
+defaults:
+  - paths
+  - inference/drfold
+  - inference/boltz
+  - _self_
+
+# Global settings
+seed: 42
+no_dvc_pull: false

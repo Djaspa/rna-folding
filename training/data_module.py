@@ -6,9 +6,7 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import DataLoader, Dataset, random_split
 
-# Simple vocabulary for RNA
-VOCAB = {"A": 1, "C": 2, "G": 3, "U": 4, "T": 4}  # T treated as U
-PAD_IDX = 0
+from constants import PAD_IDX, VOCAB
 
 
 class RNADataset(Dataset):

@@ -1,0 +1,20 @@
+# Boltz inference settings
+
+diffusion_samples: 1
+recycling_steps: 10
+sampling_steps: 500
+num_workers: 2
+override: true
+
+# Diffusion process parameters
+diffusion:
+  gamma_0: 0.605
+  gamma_min: 1.107
+  noise_scale: 0.901
+  rho: 8
+  step_scale: 1.638
+  sigma_min: 0.0004
+  sigma_max: 160.0
+  sigma_data: 16.0
+  P_mean: -1.2
+  P_std: 1.5

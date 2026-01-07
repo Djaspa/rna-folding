@@ -1,0 +1,12 @@
+# Main Hydra configuration entrypoint
+# Composes all sub-configs using Hydra defaults
+
+defaults:
+  - paths
+  - training: default
+  - model: default
+  - data: default
+  - _self_
+
+# Global settings
+seed: 42

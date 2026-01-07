@@ -1,9 +1,10 @@
-import argparse
 import logging
 import sys
 from pathlib import Path
 
+import hydra
 import pytorch_lightning as pl
+from omegaconf import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 # Add project root to path to ensure imports work
@@ -18,58 +19,56 @@ logging.basicConfig(
 )
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--batch_size", type=int, default=4)
-    parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument(
-        "--fast_dev_run",
-        action="store_true",
-        help="Run 1 step of training/val to check bugs",
-    )
-    parser.add_argument(
-        "--no_dvc_pull",
-        action="store_true",
-        help="Skip automatic DVC pull for data files",
-    )
-    args = parser.parse_args()
-
-    pl.seed_everything(42)
+@hydra.main(version_base=None, config_path="../configs", config_name="config")
+def main(cfg: DictConfig):
+    pl.seed_everything(cfg.seed)
 
     # Data paths
     root_dir = Path(__file__).resolve().parent.parent
-    seq_csv = root_dir / "data" / "merged_sequences_final.csv"
-    label_csv = root_dir / "data" / "merged_labels_final.csv"
+    seq_csv = root_dir / cfg.paths.data_dir / cfg.data.seq_csv
+    label_csv = root_dir / cfg.paths.data_dir / cfg.data.label_csv
 
     # Ensure data is available (auto-pull from DVC if needed)
     ensure_data_available(
         [seq_csv, label_csv],
-        auto_pull=not args.no_dvc_pull,
+        auto_pull=not cfg.training.no_dvc_pull,
         project_root=root_dir,
     )
 
     # Initialize DataModule
-    dm = RNADataModule(seq_csv=seq_csv, label_csv=label_csv, batch_size=args.batch_size)
+    dm = RNADataModule(
+        seq_csv=seq_csv,
+        label_csv=label_csv,
+        batch_size=cfg.training.batch_size,
+        num_workers=cfg.data.num_workers,
+        val_split=cfg.data.val_split,
+    )
 
     # Initialize Model
-    model = RNALightningModule()
+    model = RNALightningModule(
+        vocab_size=cfg.model.vocab_size,
+        embed_dim=cfg.model.embed_dim,
+        hidden_dim=cfg.model.hidden_dim,
+        num_layers=cfg.model.num_layers,
+        lr=cfg.model.learning_rate,
+    )
 
     # Callbacks
     checkpoint_callback = ModelCheckpoint(
-        dirpath=root_dir / "checkpoints",
-        filename="rna-fold-{epoch:02d}-{val_loss:.2f}",
-        save_top_k=3,
-        monitor="val_loss",
-        mode="min",
+        dirpath=root_dir / cfg.paths.checkpoints_dir,
+        filename=cfg.training.checkpoint.filename,
+        save_top_k=cfg.training.checkpoint.save_top_k,
+        monitor=cfg.training.checkpoint.monitor,
+        mode=cfg.training.checkpoint.mode,
     )
 
     # Trainer
     trainer = pl.Trainer(
-        max_epochs=args.epochs,
-        fast_dev_run=args.fast_dev_run,
+        max_epochs=cfg.training.epochs,
+        fast_dev_run=cfg.training.fast_dev_run,
         callbacks=[checkpoint_callback],
-        accelerator="auto",
-        devices="auto",
+        accelerator=cfg.training.accelerator,
+        devices=cfg.training.devices,
     )
 
     # Train
