@@ -82,6 +82,7 @@ rna_folding/
 ├── boltz_handler.py          # Boltz-1 input preparation and inference
 ├── drfold_handler.py         # DRfold2 setup, CIF→PDB conversion, inference
 ├── template_modeler.py       # Template-based prediction and de novo fallbacks
+├── dvc_utils.py              # DVC utility functions for data management
 │
 ├── scripts/                  # Executable scripts
 │   ├── main.py               # Main orchestration script
@@ -197,15 +198,73 @@ This generates:
     ```
 
 2.  **Set up Pre-commit hooks** (for developers):
+
     ```bash
     uv run pre-commit install
     ```
 
+3.  **Pull data from DVC** (if you have access to the remote):
+    ```bash
+    uv run dvc pull
+    ```
+
+## DVC Data Management
+
+This project uses [DVC (Data Version Control)](https://dvc.org/) to manage large data files. Data is stored on Google Drive and tracked via `.dvc` files in git.
+
+### Tracked Data Files
+
+- `data/merged_sequences_final.csv` - Merged RNA sequences (~10MB)
+- `data/merged_labels_final.csv` - Merged 3D coordinates (~544MB)
+- `data/stanford-rna-3d-folding/` - Competition data
+- `data/extended-rna/` - Extended training data
+- `data/rna-cif-to-csv/` - PDB-derived structural data
+
+### Data Commands
+
+```bash
+# Pull all data from remote
+uv run dvc pull
+
+# Check data status
+uv run dvc status
+
+# Push new data to remote (after adding with dvc add)
+uv run dvc push
+```
+
+### Automatic Data Pull
+
+Training and inference commands automatically pull missing data via DVC. To skip auto-pull:
+
+```bash
+# Training
+uv run python -m training.train --no_dvc_pull
+
+# Inference
+uv run scripts/main.py --no_dvc_pull
+```
+
 ## Usage
 
+### Training
+
+```bash
+# Run training (auto-pulls data if missing)
+uv run python -m training.train
+
+# Quick validation run
+uv run python -m training.train --fast_dev_run
+
+# Custom batch size and epochs
+uv run python -m training.train --batch_size 8 --epochs 20
+```
+
+### Inference
+
 1.  Place `DRfold2` repository in the project root (or ensure it's accessible).
-2.  Place input data (`test_sequences.csv`, `merged_sequences_final.csv`, `merged_labels_final.csv`) in the project root.
-3.  Run the pipeline:
+2.  Place `test_sequences.csv` in the project root.
+3.  Run the inference pipeline:
 
     ```bash
     uv run scripts/main.py

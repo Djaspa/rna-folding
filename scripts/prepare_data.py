@@ -220,7 +220,7 @@ def export_data(
 
 def main(
     data_dir: str = "data",
-    output_dir: str = ".",
+    output_dir: str = "data",
     sequences_only: bool = False,
     labels_only: bool = False,
 ) -> None:

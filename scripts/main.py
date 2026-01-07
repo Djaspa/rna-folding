@@ -7,7 +7,7 @@ import fire
 import pandas as pd
 
 # Adjust path to import modules
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from rna_folding_module.config import (  # noqa: E402
     BASE_DIR,
@@ -32,6 +32,8 @@ from rna_folding_module.src.template_modeler import (  # noqa: E402
     process_labels_vectorized,
 )
 
+from dvc_utils import ensure_data_available  # noqa: E402
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -39,19 +41,32 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main(no_dvc_pull: bool = False):
+    """Run RNA Folding Pipeline.
+
+    Args:
+        no_dvc_pull: If True, skip automatic DVC pull for data files.
+    """
     logger.info("Starting RNA Folding Pipeline...")
 
     # --- Setup ---
     # Assume source directories exist or we skip setup
-    patches_dir = Path(__file__).resolve().parent.parent / "drfold_patches"
+    root_dir = Path(__file__).resolve().parent.parent
+    patches_dir = root_dir / "drfold_patches"
     setup_drfold(patches_dir)
 
     # --- Load Data ---
-    # Adjust paths as per user environment
-    test_sequences_path = BASE_DIR / "test_sequences.csv"  # Assuming in root
-    train_seqs_path = BASE_DIR / "merged_sequences_final.csv"
-    train_labels_path = BASE_DIR / "merged_labels_final.csv"
+    # Data paths (now in data/ directory, managed by DVC)
+    test_sequences_path = BASE_DIR / "test_sequences.csv"
+    train_seqs_path = root_dir / "data" / "merged_sequences_final.csv"
+    train_labels_path = root_dir / "data" / "merged_labels_final.csv"
+
+    # Ensure training data is available (auto-pull from DVC if needed)
+    ensure_data_available(
+        [train_seqs_path, train_labels_path],
+        auto_pull=not no_dvc_pull,
+        project_root=root_dir,
+    )
 
     if not test_sequences_path.exists():
         logger.error(f"Test sequences file not found at {test_sequences_path}")
