@@ -1,7 +1,7 @@
-import argparse
 import sys
 from pathlib import Path
 
+import fire
 import torch
 
 # Add project root to path
@@ -64,23 +64,4 @@ def export_model_to_onnx(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Export RNA Folding model to ONNX")
-    parser.add_argument(
-        "--checkpoint_path", type=str, default=None, help="Path to .ckpt file"
-    )
-    parser.add_argument("--output", type=str, default="model.onnx", help="Output path")
-    parser.add_argument("--vocab_size", type=int, default=5)
-    parser.add_argument("--embed_dim", type=int, default=64)
-    parser.add_argument("--hidden_dim", type=int, default=128)
-    parser.add_argument("--num_layers", type=int, default=2)
-
-    args = parser.parse_args()
-
-    export_model_to_onnx(
-        checkpoint_path=args.checkpoint_path,
-        output_path=args.output,
-        vocab_size=args.vocab_size,
-        embed_dim=args.embed_dim,
-        hidden_dim=args.hidden_dim,
-        num_layers=args.num_layers,
-    )
+    fire.Fire(export_model_to_onnx)

@@ -6,8 +6,8 @@ This module contains various utility scripts for the RNA folding project.
 
 from data_processing.cif_to_csv import main as cif_to_csv
 from data_processing.prepare_data import main as prepare_data
+from deployment.export_onnx import export_model_to_onnx as export_onnx
 from scripts.boltz_inference import main as boltz_inference
-from scripts.export_onnx import main as export_onnx
 from scripts.main import main as inference_main
 
 __all__ = [

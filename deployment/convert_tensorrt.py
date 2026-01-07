@@ -1,7 +1,8 @@
-import argparse
 import shutil
 import subprocess
 import sys
+
+import fire
 
 
 def convert_onnx_to_tensorrt(
@@ -59,21 +60,4 @@ def convert_onnx_to_tensorrt(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Convert ONNX model to TensorRT engine using trtexec"
-    )
-    parser.add_argument("--onnx", type=str, required=True, help="Input ONNX file path")
-    parser.add_argument(
-        "--output", type=str, default="model.engine", help="Output Engine file path"
-    )
-    parser.add_argument("--fp16", action="store_true", help="Enable FP16 precision")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-
-    args = parser.parse_args()
-
-    convert_onnx_to_tensorrt(
-        onnx_path=args.onnx,
-        output_path=args.output,
-        fp16=args.fp16,
-        verbose=args.verbose,
-    )
+    fire.Fire(convert_onnx_to_tensorrt)

@@ -12,7 +12,7 @@ from pytorch_lightning.loggers import MLFlowLogger
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from data_processing.dvc_utils import ensure_data_available  # noqa: E402
-from scripts.export_onnx import export_model_to_onnx  # noqa: E402
+from deployment.export_onnx import export_model_to_onnx  # noqa: E402
 from training.data_module import RNADataModule  # noqa: E402
 from training.lightning_model import RNALightningModule  # noqa: E402
 
