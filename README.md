@@ -76,14 +76,112 @@ DRfold2 outputs.
 
 ## Project Structure
 
-- **`config.py`**: Configuration parameters.
-- **`boltz_handler.py`**: Handles Boltz-1 input preparation and inference.
-- **`drfold_handler.py`**: Handles DRfold2 setup, CIF->PDB conversion, and inference.
-- **`template_modeler.py`**: Implements template-based prediction and de novo fallbacks.
-- **`scripts/`**
-  - `main.py`: Main orchestration script.
-  - `boltz_inference.py`: Standalone Boltz inference script (called by handler).
-- **`drfold_patches/`**: Contains modified source code for DRfold2 (Optimization, Selection, etc.).
+```
+rna_folding/
+├── config.py                 # Configuration parameters and paths
+├── boltz_handler.py          # Boltz-1 input preparation and inference
+├── drfold_handler.py         # DRfold2 setup, CIF→PDB conversion, inference
+├── template_modeler.py       # Template-based prediction and de novo fallbacks
+│
+├── scripts/                  # Executable scripts
+│   ├── main.py               # Main orchestration script
+│   ├── boltz_inference.py    # Standalone Boltz inference (called by handler)
+│   ├── cif_to_csv.py         # CIF to CSV extraction script
+│   └── prepare_data.py       # Data preparation and merging script
+│
+├── training/                 # PyTorch Lightning training module
+│   ├── data_module.py        # LightningDataModule for RNA datasets
+│   ├── lightning_model.py    # LightningModule for model training
+│   └── train.py              # Training entry point
+│
+├── drfold_patches/           # Modified DRfold2 source code
+│   ├── Optimization.py       # Optimized energy minimization
+│   ├── Selection.py          # Model selection logic
+│   ├── operations.py         # Vectorized operations
+│   ├── Cubic.py              # Cubic spline utilities
+│   ├── DRfold_infer.py       # Inference wrapper
+│   ├── cfg_for_folding.json  # Folding configuration
+│   └── cfg_for_selection.json # Selection configuration
+│
+└── data/                     # Data directory (create as needed)
+    ├── stanford-rna-3d-folding/
+    ├── extended-rna/
+    └── rna-cif-to-csv/
+```
+
+## Data Preparation
+
+The project requires RNA sequence and label data from multiple sources. Use the `prepare_data.py` script to merge these datasets.
+
+### Data Sources
+
+1. **Stanford RNA 3D Folding** (Kaggle competition data)
+   - `train_sequences.csv`, `validation_sequences.csv`, `test_sequences.csv`
+   - `train_labels.csv`, `validation_labels.csv`
+
+2. **Extended RNA** (additional training data)
+   - `train_sequences_v2.csv`, `train_labels_v2.csv`
+
+3. **RNA CIF to CSV** (PDB-derived structural data)
+   - `rna_sequences.csv`, `rna_coordinates.csv`
+
+### Extracting RNA Data from CIF Files
+
+If you have PDB CIF files (e.g., from `PDB_RNA/`), use the `cif_to_csv.py` script to extract RNA sequences and C1' coordinates:
+
+```bash
+# Extract from default location (data/stanford-rna-3d-folding/PDB_RNA/)
+uv run scripts/cif_to_csv.py
+
+# Custom input/output paths
+uv run scripts/cif_to_csv.py --cif_dir /path/to/cif/files --output_dir data/rna-cif-to-csv
+
+# Disable progress bar (useful for logging)
+uv run scripts/cif_to_csv.py --no_progress
+```
+
+This generates:
+
+- `rna_sequences.csv`: Unique RNA sequences with `target_id` and `sequence` columns
+- `rna_coordinates.csv`: C1' atom coordinates with `ID`, `resname`, `resid`, `x_1`, `y_1`, `z_1` columns
+
+### Preparing the Data
+
+1. Organize your data files in the expected directory structure:
+
+   ```
+   data/
+   ├── stanford-rna-3d-folding/
+   │   ├── PDB_RNA/             # CIF files (optional, for cif_to_csv.py)
+   │   ├── train_sequences.csv
+   │   ├── validation_sequences.csv
+   │   ├── test_sequences.csv
+   │   ├── train_labels.csv
+   │   └── validation_labels.csv
+   ├── extended-rna/
+   │   ├── train_sequences_v2.csv
+   │   └── train_labels_v2.csv
+   └── rna-cif-to-csv/
+       ├── rna_sequences.csv
+       └── rna_coordinates.csv
+   ```
+
+2. Run the data preparation script:
+
+   ```bash
+   # Merge all datasets and export to current directory
+   uv run scripts/prepare_data.py --data_dir data --output_dir .
+
+   # Or merge only sequences
+   uv run scripts/prepare_data.py --data_dir data --sequences_only
+
+   # Or merge only labels
+   uv run scripts/prepare_data.py --data_dir data --labels_only
+   ```
+
+3. The script produces:
+   - `merged_sequences_final.csv`: ~19,000+ unique RNA sequences
+   - `merged_labels_final.csv`: Corresponding 3D coordinates (C1' atoms)
 
 ## Prerequisites
 
