@@ -318,7 +318,7 @@ uv run python training/train.py logging.enabled=false
 To use a remote tracking server, update `configs/logging/mlflow.yaml` or override via CLI:
 
 ```bash
-uv run python training/train.py logging.tracking_uri=http://my-mlflow-server:5000
+uv run python training/train.py logging.tracking_uri=plots
 ```
 
 ## Configuration

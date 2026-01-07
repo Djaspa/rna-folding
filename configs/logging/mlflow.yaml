@@ -2,7 +2,7 @@
 
 enabled: true
 experiment_name: rna-folding
-tracking_uri: mlruns
+tracking_uri: plots
 run_name: null
 log_model: false
 tags: {}

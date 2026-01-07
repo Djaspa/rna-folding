@@ -15,5 +15,5 @@ node_modules/.cache/
 *.ipynb
 *.json
 
-mlruns/
+plots/
 outputs/
