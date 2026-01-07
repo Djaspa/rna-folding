@@ -1,0 +1,6 @@
+outs:
+- md5: d635e4725f0bb4258d974cbff4a351a0.dir
+  size: 15402837
+  nfiles: 6
+  hash: md5
+  path: stanford-rna-3d-folding

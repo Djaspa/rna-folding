@@ -1,0 +1,6 @@
+outs:
+- md5: dd3bb9c23bb080a113200b424c6ea2a2.dir
+  size: 433536846
+  nfiles: 2
+  hash: md5
+  path: rna-cif-to-csv

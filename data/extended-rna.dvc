@@ -1,0 +1,6 @@
+outs:
+- md5: 894a7610af0ece0de611755e6b1ba9ff.dir
+  size: 323857775
+  nfiles: 2
+  hash: md5
+  path: extended-rna

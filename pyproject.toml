@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "dvc>=3.66.0",
+    "dvc-gdrive>=3.0.1",
     "fire>=0.7.1",
     "pandas>=2.3.3",
     "pytorch-lightning>=2.6.0",
