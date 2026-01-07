@@ -578,7 +578,6 @@ if __name__ == "__main__":
     predict(
         data="./inputs_prediction",
         out_dir="./outputs_prediction",
-        cache="/kaggle/input/rna-prediction-boltz/",
         diffusion_samples=1,
         recycling_steps=10,
         accelerator="gpu",

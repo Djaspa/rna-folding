@@ -11,7 +11,7 @@ from pytorch_lightning.loggers import MLFlowLogger
 # Add project root to path to ensure imports work
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from dvc_utils import ensure_data_available  # noqa: E402
+from data_processing.dvc_utils import ensure_data_available  # noqa: E402
 from scripts.export_onnx import export_model_to_onnx  # noqa: E402
 from training.data_module import RNADataModule  # noqa: E402
 from training.lightning_model import RNALightningModule  # noqa: E402

@@ -10,14 +10,18 @@ from omegaconf import DictConfig
 # Adjust path to import modules
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from boltz_handler import get_coords, prepare_inputs, run_inference  # noqa: E402
-from drfold_handler import (  # noqa: E402
+from data_processing.dvc_utils import ensure_data_available  # noqa: E402
+from handlers.boltz_handler import (  # noqa: E402
+    get_coords,
+    prepare_inputs,
+    run_inference,
+)
+from handlers.drfold_handler import (  # noqa: E402
     convert_cif_to_pdb,
     predict_rna_structures_drfold2,
     setup_drfold,
 )
-from dvc_utils import ensure_data_available  # noqa: E402
-from template_modeler import (  # noqa: E402
+from handlers.template_modeler import (  # noqa: E402
     predict_rna_structures,
     process_labels_vectorized,
 )

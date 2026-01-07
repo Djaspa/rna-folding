@@ -5,8 +5,8 @@ This script loads a PyTorch Lightning checkpoint and registers it as an MLflow
 model with proper input/output signatures for serving.
 
 Usage:
-    uv run python scripts/register_model.py --checkpoint path/to/model.ckpt
-    uv run python scripts/register_model.py --checkpoint m.ckpt --model_name x
+    uv run python inference/register_model.py --checkpoint path/to/model.ckpt
+    uv run python inference/register_model.py --checkpoint m.ckpt --model_name x
 """
 
 import logging

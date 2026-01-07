@@ -4,9 +4,9 @@ Start MLflow Model Serving endpoint.
 This script starts an MLflow model serving endpoint for the RNA Folding model.
 
 Usage:
-    uv run python scripts/serve.py
-    uv run python scripts/serve.py --port 8080
-    uv run python scripts/serve.py --model_version 1
+    uv run python inference/serve.py
+    uv run python inference/serve.py --port 8080
+    uv run python inference/serve.py --model_version 1
 """
 
 import logging
@@ -109,7 +109,7 @@ def serve(
         logging.error(str(e))
         logging.error(
             "Please register a model first using: "
-            "uv run python scripts/register_model.py --checkpoint <path>"
+            "uv run python inference/register_model.py --checkpoint <path>"
         )
         sys.exit(1)
 

@@ -26,7 +26,7 @@ def ensure_data_available(
                            or dvc pull fails.
     """
     if project_root is None:
-        project_root = Path(__file__).resolve().parent
+        project_root = Path(__file__).resolve().parent.parent
 
     missing_files = [p for p in data_paths if not p.exists()]
 

@@ -22,3 +22,5 @@ outputs/
 checkpoints/
 
 mlflow.db
+
+.DS_Store

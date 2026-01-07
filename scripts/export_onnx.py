@@ -47,17 +47,7 @@ def export_model_to_onnx(
 
     model.eval()
 
-    # Create dummy input: [Batch, Length]
-    # Use batch size 1, length 10
     dummy_input = torch.randint(0, vocab_size, (1, 10))
-
-    # Dynamic axes: allow variable batch size and sequence length
-    # Note: PyTorch 2.x exporter (Dynamo) is strict about shape specialization.
-    # For now, we export with static shapes to avoid "Constraints violated" errors.
-    # dynamic_axes = {
-    #     "input": {0: "batch_size", 1: "seq_len"},
-    #     "output": {0: "batch_size", 1: "seq_len"},
-    # }
 
     print(f"Exporting model to {output_path}...")
     torch.onnx.export(
@@ -69,7 +59,6 @@ def export_model_to_onnx(
         do_constant_folding=True,
         input_names=["input"],
         output_names=["output"],
-        # dynamic_axes=dynamic_axes,
     )
     print("Export complete.")
 
@@ -80,7 +69,6 @@ if __name__ == "__main__":
         "--checkpoint_path", type=str, default=None, help="Path to .ckpt file"
     )
     parser.add_argument("--output", type=str, default="model.onnx", help="Output path")
-    # Model params (needed if no checkpoint, or to override)
     parser.add_argument("--vocab_size", type=int, default=5)
     parser.add_argument("--embed_dim", type=int, default=64)
     parser.add_argument("--hidden_dim", type=int, default=128)

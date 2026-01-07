@@ -79,10 +79,10 @@ DRfold2 outputs.
 ```
 rna_folding/
 ├── constants.py              # Global constants (vocabulary, structural params)
-├── boltz_handler.py          # Boltz-1 input preparation and inference
-├── drfold_handler.py         # DRfold2 setup, CIF→PDB conversion, inference
-├── template_modeler.py       # Template-based prediction and de novo fallbacks
-├── dvc_utils.py              # DVC utility functions for data management
+├── handlers/                 # Handler modules
+│   ├── boltz_handler.py      # Boltz-1 input preparation and inference
+│   ├── drfold_handler.py     # DRfold2 setup, CIF→PDB conversion, inference
+│   └── template_modeler.py   # Template-based prediction and de novo fallbacks
 │
 ├── configs/                  # Hydra configuration files
 │   ├── config.yaml           # Main training config entrypoint
@@ -97,14 +97,21 @@ rna_folding/
 │   ├── inference/
 │   │   ├── drfold.yaml       # DRfold inference settings
 │   │   └── boltz.yaml        # Boltz inference settings
-│   └── preprocessing/
+│   ├── preprocessing/
 │       └── default.yaml      # Data preparation settings
+│
+├── inference/                # Inference module
+│   ├── register_model.py     # Model registry script
+│   └── serve.py              # Model serving script
+│
+├── data_processing/          # Data processing utilities
+│   ├── dvc_utils.py          # DVC utility functions for data management
+│   ├── cif_to_csv.py         # CIF to CSV extraction script
+│   └── prepare_data.py       # Data preparation and merging script
 │
 ├── scripts/                  # Executable scripts
 │   ├── main.py               # Main orchestration script (uses Hydra)
-│   ├── boltz_inference.py    # Standalone Boltz inference (called by handler)
-│   ├── cif_to_csv.py         # CIF to CSV extraction script
-│   └── prepare_data.py       # Data preparation and merging script
+│   └── boltz_inference.py    # Standalone Boltz inference (called by handler)
 │
 ├── training/                 # PyTorch Lightning training module
 │   ├── data_module.py        # LightningDataModule for RNA datasets
@@ -128,7 +135,7 @@ rna_folding/
 
 ## Data Preparation
 
-The project requires RNA sequence and label data from multiple sources. Use the `prepare_data.py` script to merge these datasets.
+The project requires RNA sequence and label data from multiple sources. Use the `data_processing/prepare_data.py` script to merge these datasets.
 
 ### Data Sources
 
@@ -144,17 +151,17 @@ The project requires RNA sequence and label data from multiple sources. Use the 
 
 ### Extracting RNA Data from CIF Files
 
-If you have PDB CIF files (e.g., from `PDB_RNA/`), use the `cif_to_csv.py` script to extract RNA sequences and C1' coordinates:
+If you have PDB CIF files (e.g., from `PDB_RNA/`), use the `data_processing/cif_to_csv.py` script to extract RNA sequences and C1' coordinates:
 
 ```bash
 # Extract from default location (data/stanford-rna-3d-folding/PDB_RNA/)
-uv run scripts/cif_to_csv.py
+uv run data_processing/cif_to_csv.py
 
 # Custom input/output paths
-uv run scripts/cif_to_csv.py --cif_dir /path/to/cif/files --output_dir data/rna-cif-to-csv
+uv run data_processing/cif_to_csv.py --cif_dir /path/to/cif/files --output_dir data/rna-cif-to-csv
 
 # Disable progress bar (useful for logging)
-uv run scripts/cif_to_csv.py --no_progress
+uv run data_processing/cif_to_csv.py --no_progress
 ```
 
 This generates:
@@ -187,13 +194,13 @@ This generates:
 
    ```bash
    # Merge all datasets and export to current directory
-   uv run scripts/prepare_data.py --data_dir data --output_dir .
+   uv run data_processing/prepare_data.py --data_dir data --output_dir .
 
    # Or merge only sequences
-   uv run scripts/prepare_data.py --data_dir data --sequences_only
+   uv run data_processing/prepare_data.py --data_dir data --sequences_only
 
    # Or merge only labels
-   uv run scripts/prepare_data.py --data_dir data --labels_only
+   uv run data_processing/prepare_data.py --data_dir data --labels_only
    ```
 
 3. The script produces:
@@ -421,10 +428,10 @@ First, register a trained checkpoint with MLflow:
 
 ```bash
 # Register from a checkpoint
-uv run python scripts/register_model.py --checkpoint checkpoints/rna-fold-epoch=01-val_loss=nan.ckpt
+uv run python inference/register_model.py --checkpoint checkpoints/rna-fold-epoch=01-val_loss=nan.ckpt
 
 # Custom model name
-uv run python scripts/register_model.py --checkpoint checkpoints/my_model.ckpt --model_name my-rna-model
+uv run python inference/register_model.py --checkpoint checkpoints/my_model.ckpt --model_name my-rna-model
 ```
 
 View registered models in the MLflow UI:
@@ -437,13 +444,13 @@ uv run mlflow ui --backend-store-uri plots
 
 ```bash
 # Start with default config (port 5001)
-uv run python scripts/serve.py
+uv run python inference/serve.py
 
 # Custom port
-uv run python scripts/serve.py --port 8080
+uv run python inference/serve.py --port 8080
 
 # Specific model version
-uv run python scripts/serve.py --model_version 1
+uv run python inference/serve.py --model_version 1
 ```
 
 #### 3. Make Predictions
