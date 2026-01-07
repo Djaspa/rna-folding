@@ -3,6 +3,7 @@ import sys
 import time
 from pathlib import Path
 
+import fire
 import pandas as pd
 
 # Adjust path to import modules
@@ -257,4 +258,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    fire.Fire(main)
